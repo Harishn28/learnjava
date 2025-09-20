@@ -2,7 +2,7 @@
 
 ## 1. CGI (Common Gateway Interface)
 - Early way of handling web requests.
-- Each request starts a new process ➞ very slow.
+- Each request starts a new process → very slow.
 - Example: Perl/Python/Java program invoked per request.
 - **Dependencies**: None, OS-level executables.
 
@@ -10,7 +10,7 @@
 
 ## 2. JSP (JavaServer Pages)
 - Embeds Java code inside HTML.
-- Faster than CGI, but mixes business logic with presentation ➞ messy.
+- Faster than CGI, but mixes business logic with presentation → messy.
 - **Dependencies**: `javax.servlet.jsp-api` (container-provided), JSP compiler.
 
 ---
@@ -18,13 +18,7 @@
 ## 3. Servlets
 - Pure Java classes handling HTTP requests/responses.
 - First introduced in late 1990s with Java Servlet API 2.1 (1997).
-- Portable across servers supporting the Servlet API:
-  - Apache Tomcat
-  - Jetty
-  - WildFly / JBoss EAP
-  - GlassFish / Payara
-  - IBM WebSphere
-  - Oracle WebLogic
+- Portable across servers supporting the Servlet API (Tomcat, Jetty, WildFly, GlassFish, etc.).
 - Clear separation from HTML, but too low-level.
 - **Dependencies**: `javax.servlet-api`, servlet container (Tomcat, Jetty).
 
@@ -33,7 +27,6 @@
 # Servlet-based CRUD APIs
 
 ## Old Style (web.xml)
-
 ### Folder Structure
 ```
 MyApp/
@@ -46,7 +39,6 @@ MyApp/
 ```
 
 ### Code
-
 **HelloServlet.java**
 ```java
 import java.io.*;
@@ -80,7 +72,6 @@ public class HelloServlet extends HttpServlet {
 ---
 
 ## New Style (@WebServlet)
-
 ### Folder Structure
 ```
 MyApp/
@@ -112,23 +103,30 @@ public class HelloServlet extends HttpServlet {
 ---
 
 # Problems with Servlet-only CRUD APIs
+- Too much boilerplate (request parsing, response writing, JSON serialization manually).
+- Hard to test & maintain (tight coupling).
+- No clear separation of layers (business logic, controller, view mixed).
+- Led to Spring MVC.
 
-Even in pure Servlet-based apps, you could create separate classes for controller and business logic. But the developer must manually handle many things, which leads to boilerplate and complexity.
+### 1. Layer Separation is Manual in Servlets
+Before Spring MVC, even in pure Servlets, you could structure your code like this:
 
-**Example of manual separation in old style Servlets:**
 ```java
+// Controller
 public class DiscountController {
     private final DiscountService service = new DiscountService();
 
-    public void handle(HttpServletRequest req, HttpServletResponse res) throws IOException { 
+    public void handle(HttpServletRequest req, HttpServletResponse res) throws IOException {
         double discount = service.calculateDiscount(req.getParameter("type"));
         res.getWriter().println(discount);
     }
 }
 
+// Service
 public class DiscountService {
-    public double calculateDiscount(String customerType) { 
-        // business logic
+    public double calculateDiscount(String customerType) {
+        // business logic here
+        return 0.0;
     }
 }
 ```
@@ -136,34 +134,31 @@ public class DiscountService {
 ✅ Separation exists
 
 ❌ But you still have to manually handle:
-- Request mapping (/discount)
+- Request mapping (`/discount`)
 - JSON serialization
 - Error handling
 - Dependency injection
 - Bean lifecycle
 
-### 1. Layer Separation is Manual in Servlets
-- You can separate controller and service, but you manually manage request handling, mapping, serialization, and lifecycle.
-
 ### 2. Spring MVC Automates the Boilerplate
-- Automatic request mapping via `@RequestMapping` / `@GetMapping` etc., no need to define each URL in `web.xml` as long as component scan is configured in DispatcherServlet.
-- Automatic JSON/XML serialization with `@ResponseBody` and Jackson.
-- Dependency injection via `@Autowired` / constructor injection.
-- Validation & exception handling via annotations like `@Valid` and `@ControllerAdvice`.
-- View resolution for JSP/Thymeleaf if needed.
-- Testability: Controllers can be tested independently of servlet container using MockMvc.
+Spring MVC provides:
+- Automatic request mapping via `@RequestMapping` / `@GetMapping`
+- Automatic JSON/XML serialization with `@ResponseBody` and Jackson
+- Dependency injection via `@Autowired` / constructor injection
+- Validation & exception handling via annotations like `@Valid` and `@ControllerAdvice`
+- View resolution for JSP/Thymeleaf if needed
+- Testability: Controllers can be tested independently of servlet container using `MockMvc`
 
 ### 3. Convention + Ecosystem
-- Spring MVC gives conventions and a framework: less chance of “spaghetti code” even when multiple developers work on the same app.
-- Integrates seamlessly with Spring Boot, Spring Security, Spring Data JPA, etc. — something you would have to wire manually in pure Servlets.
+Spring MVC gives conventions and a framework: less chance of “spaghetti code” even when multiple developers work on the same app. Integrates seamlessly with Spring Boot, Spring Security, Spring Data JPA, etc. — something you would have to wire manually in pure Servlets.
 
 ✅ TL;DR:
-- You can achieve separation manually in Servlets, but Spring MVC:
-  - Reduces boilerplate
-  - Handles JSON, validation, exceptions automatically
-  - Provides dependency injection and lifecycle management
-  - Makes your code more maintainable and testable
-  - Integrates easily with the rest of the Spring ecosystem
+You can achieve separation manually in Servlets, but Spring MVC:
+- Reduces boilerplate
+- Handles JSON, validation, exceptions automatically
+- Provides dependency injection and lifecycle management
+- Makes your code more maintainable and testable
+- Integrates easily with the rest of the Spring ecosystem
 
 ---
 
@@ -182,7 +177,6 @@ MyApp/
 ```
 
 ### Code
-
 **HelloController.java**
 ```java
 package com.example.controller;
@@ -235,6 +229,7 @@ public class HelloController {
     <mvc:annotation-driven/>
 </beans>
 ```
+**Note:** Spring automatically loads `dispatcher-servlet.xml` based on the `DispatcherServlet` name without explicit reference in `web.xml`.
 
 - **Dependencies**:
   - `spring-core`
@@ -242,8 +237,6 @@ public class HelloController {
   - `spring-web`
   - `spring-webmvc`
   - `jackson-databind`
-
----
 
 ## Without XML (Java Config)
 ### Folder Structure
@@ -257,7 +250,6 @@ MyApp/
 ```
 
 ### Code
-
 **HelloController.java**
 ```java
 package com.example.controller;
@@ -299,7 +291,7 @@ public class AppInitializer extends AbstractAnnotationConfigDispatcherServletIni
 
     @Override
     protected Class<?>[] getRootConfigClasses() {
-        return null; 
+        return null;
     }
 
     @Override
@@ -320,10 +312,10 @@ public class AppInitializer extends AbstractAnnotationConfigDispatcherServletIni
 
 # DispatcherServlet & View Resolution
 
-- **DispatcherServlet** ➞ Front Controller in Spring MVC.
+- **DispatcherServlet** → Front Controller in Spring MVC.
 - Maps incoming requests to controllers via annotations (`@RequestMapping`).
-- Normally, controllers return *view names* (JSPs, Thymeleaf, etc.) ➞ **ViewResolver** maps them.
-- With `@ResponseBody`, view resolution is skipped ➞ return value is written directly to HTTP response body (JSON/String).
+- Normally, controllers return *view names* (JSPs, Thymeleaf, etc.) → **ViewResolver** maps them.
+- With `@ResponseBody`, view resolution is skipped → return value is written directly to HTTP response body (JSON/String).
 
 ---
 
@@ -382,9 +374,9 @@ public String sayHello() {
 - Switches on default Spring MVC configuration.  
 - Equivalent to `<mvc:annotation-driven/>`.  
 - Registers essential beans:
-  - `RequestMappingHandlerMapping` ➞ maps URLs to `@RequestMapping` methods.  
-  - `RequestMappingHandlerAdapter` ➞ invokes those methods.  
-  - `HttpMessageConverters` ➞ handle JSON/XML conversion (via Jackson).  
+  - `RequestMappingHandlerMapping` → maps URLs to `@RequestMapping` methods.  
+  - `RequestMappingHandlerAdapter` → invokes those methods.  
+  - `HttpMessageConverters` → handle JSON/XML conversion (via Jackson).  
   - Default config for validation, formatting, etc.
 
 **Without @EnableWebMvc Example:**
@@ -404,4 +396,3 @@ public class WebConfig { }
 ```
 → Spring wires controllers, mappings, and JSON serialization.
 
----
