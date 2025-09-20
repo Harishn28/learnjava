@@ -111,59 +111,130 @@ public class HelloServlet extends HttpServlet {
 
 ---
 
+
+
 # Problems with Servlet-only CRUD APIs
 
-Even in pure Servlet-based apps, you could create separate classes for controller and business logic. But the developer must manually handle many things, which leads to boilerplate and complexity.
+## Scenario: Building a simple “Discount API"
 
-**Example of manual separation in old style Servlets:**
+**Requirements:**
+
+1. GET `/discount?type=VIP` → returns discount percentage.
+2. GET `/discount/history` → returns last 5 discounts.
+3. Discounts are calculated using business logic (service layer).
+4. Output is JSON.
+5. Needs proper error handling.
+6. Needs to be testable without running a server.
+
+---
+
+## 1️⃣ Plain Servlet Approach
+
+You could do it with two Servlets:
+
 ```java
-public class DiscountController {
+@WebServlet("/discount")
+public class DiscountServlet extends HttpServlet {
     private final DiscountService service = new DiscountService();
 
-    public void handle(HttpServletRequest req, HttpServletResponse res) throws IOException { 
-        double discount = service.calculateDiscount(req.getParameter("type"));
-        res.getWriter().println(discount);
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        try {
+            String type = req.getParameter("type");
+            double discount = service.calculateDiscount(type);
+
+            // Manual JSON
+            res.setContentType("application/json");
+            res.getWriter().println("{\"discount\":" + discount + "}");
+        } catch(Exception e) {
+            res.setStatus(500);
+            res.getWriter().println("{\"error\":\"Something went wrong\"}");
+        }
     }
 }
 
-public class DiscountService {
-    public double calculateDiscount(String customerType) { 
-        // business logic
+@WebServlet("/discount/history")
+public class DiscountHistoryServlet extends HttpServlet {
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        // Manual JSON for list
+        res.setContentType("application/json");
+        res.getWriter().println("[5, 10, 15, 20]");
     }
 }
 ```
 
-✅ Separation exists
+**Problems here:**
 
-❌ But you still have to manually handle:
-- Request mapping (/discount)
-- JSON serialization
-- Error handling
-- Dependency injection
-- Bean lifecycle
+1. Each URL requires a **separate Servlet**.
+2. Manual JSON serialization.
+3. Manual error handling.
+4. Hard to inject services or reuse code across Servlets.
+5. Testing requires a full Servlet container or complex mocks.
 
-### 1. Layer Separation is Manual in Servlets
-- You can separate controller and service, but you manually manage request handling, mapping, serialization, and lifecycle.
+---
 
-### 2. Spring MVC Automates the Boilerplate
-- Automatic request mapping via `@RequestMapping` / `@GetMapping` etc., no need to define each URL in `web.xml` as long as component scan is configured in DispatcherServlet.
-- Automatic JSON/XML serialization with `@ResponseBody` and Jackson.
-- Dependency injection via `@Autowired` / constructor injection.
-- Validation & exception handling via annotations like `@Valid` and `@ControllerAdvice`.
-- View resolution for JSP/Thymeleaf if needed.
-- Testability: Controllers can be tested independently of servlet container using MockMvc.
+## 2️⃣ Spring MVC Approach
 
-### 3. Convention + Ecosystem
-- Spring MVC gives conventions and a framework: less chance of “spaghetti code” even when multiple developers work on the same app.
-- Integrates seamlessly with Spring Boot, Spring Security, Spring Data JPA, etc. — something you would have to wire manually in pure Servlets.
+Now with **Spring MVC**, we can do **everything in one controller**, with less boilerplate:
 
-✅ TL;DR:
-- You can achieve separation manually in Servlets, but Spring MVC:
-  - Reduces boilerplate
-  - Handles JSON, validation, exceptions automatically
-  - Provides dependency injection and lifecycle management
-  - Makes your code more maintainable and testable
-  - Integrates easily with the rest of the Spring ecosystem
+```java
+@RestController
+@RequestMapping("/discount")
+public class DiscountController {
+
+    private final DiscountService service;
+
+    public DiscountController(DiscountService service) {
+        this.service = service;
+    }
+
+    @GetMapping
+    public Map<String, Double> getDiscount(@RequestParam String type) {
+        double discount = service.calculateDiscount(type);
+        return Map.of("discount", discount); // automatic JSON serialization
+    }
+
+    @GetMapping("/history")
+    public List<Integer> getHistory() {
+        return List.of(5, 10, 15, 20); // automatic JSON
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleError(Exception e) {
+        return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+    }
+}
+```
+
+**Advantages:**
+
+1. **One class handles multiple URLs** (`/discount` and `/discount/history`) with **clear annotations**.
+2. **Automatic JSON serialization** → no manual string building.
+3. **Dependency injection** → no `new DiscountService()` inside the controller.
+4. **Centralized error handling** using `@ExceptionHandler`.
+5. **Easier testing** → we can test this controller with `MockMvc` **without a Servlet container**.
+
+---
+
+### Key Takeaways
+
+| Feature              | Servlet                            | Spring MVC                                        |
+| -------------------- | ---------------------------------- | ------------------------------------------------- |
+| URL mapping          | Manual, one servlet per URL        | Annotation-based, multiple methods per controller |
+| JSON                 | Manual serialization               | Automatic with Jackson                            |
+| Error handling       | Manual                             | Centralized with `@ExceptionHandler`              |
+| Dependency injection | Manual                             | `@Autowired` or constructor injection             |
+| Testability          | Hard                               | Easy with `MockMvc`                               |
+| Scalability          | Many servlets, lots of boilerplate | One controller handles multiple endpoints cleanly |
+
+---
+
+✅ **Bottom line:**
+
+Yes, you **can** achieve separation and mapping manually with Servlets, but Spring MVC **automates repetitive tasks**, **reduces boilerplate**, and integrates **dependency injection, validation, error handling, and testing**. This makes building and maintaining complex apps feasible.
+
+
+
+
 
 ---
 
