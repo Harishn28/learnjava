@@ -218,6 +218,9 @@ public class HelloController {
 ```
 
 **dispatcher-servlet.xml**
+
+*Note on dispatcher-servlet.xml:
+Even though web.xml does not explicitly reference dispatcher-servlet.xml, Spring automatically looks for a file named <servlet-name>-servlet.xml in WEB-INF/ when initializing the DispatcherServlet. In our case, the servlet name is dispatcher, so Spring loads WEB-INF/dispatcher-servlet.xml automatically.*
 ```xml
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:context="http://www.springframework.org/schema/context"
