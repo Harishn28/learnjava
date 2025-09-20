@@ -65,19 +65,36 @@ public class HelloServlet extends HttpServlet {
 
 **web.xml**
 ```xml
-<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee" version="3.1">
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+                             http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+
+
     <servlet>
         <servlet-name>hello</servlet-name>
-        <servlet-class>com.example.HelloServlet</servlet-class>
+        <servlet-class>org.example.HelloworldController</servlet-class>
     </servlet>
+
     <servlet-mapping>
         <servlet-name>hello</servlet-name>
         <url-pattern>/hello</url-pattern>
     </servlet-mapping>
+
 </web-app>
 ```
 
----
+**build.gradle**
+*Only compile time dependency. Runtime implementation provided by tomcat*
+```gradle
+dependencies {
+        compileOnly 'jakarta.servlet:jakarta.servlet-api:5.0.0' // Or a newer version
+    }
+```
+
+-----------
 
 ## New Style (@WebServlet)
 
