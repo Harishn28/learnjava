@@ -442,6 +442,111 @@ public String sayHello() {
    - Registers `DispatcherServlet` with mappings (`/` or custom).  
    - Initializes Spring context (`WebConfig` etc.).
 
+
+---
+------
+# How Spring MVC Hooks into Tomcat (Explained)
+
+This explains step by step how Spring MVC initializes within a servlet container like Tomcat.
+
+---
+
+## 1️⃣ Servlet API Standard
+
+* Starting from **Servlet 3.0**, servlet containers like **Tomcat** introduced a mechanism called `ServletContainerInitializer`.
+* This is a **hook**: the container says, “If someone wants to run code when the server starts, I’ll call this interface for them.”
+
+---
+
+## 2️⃣ Spring’s META-INF/services Mechanism
+
+* Spring creates the file:
+
+  ```
+  META-INF/services/javax.servlet.ServletContainerInitializer
+  ```
+* Inside it lists the class:
+
+  ```
+  org.springframework.web.SpringServletContainerInitializer
+  ```
+* Tomcat reads this file automatically at startup and calls Spring’s initializer.
+
+**Think of it as:**
+
+> Tomcat says: “Who wants to do something at startup?”
+> Spring says: “We do!”
+> Tomcat calls Spring’s initializer.
+
+---
+
+## 3️⃣ SpringServletContainerInitializer Delegation
+
+* `SpringServletContainerInitializer` itself doesn’t configure your app.
+* It **looks for classes that implement `WebApplicationInitializer`**.
+* Your custom initialization logic is handled by these classes.
+
+---
+
+## 4️⃣ AbstractAnnotationConfigDispatcherServletInitializer
+
+* Spring provides this base class to simplify `WebApplicationInitializer`.
+* What it does:
+
+  * Registers **DispatcherServlet**.
+  * Loads Spring context (`@Configuration` classes).
+  * Maps URLs (default `/`).
+
+**Think of it as:** A helper that wires everything automatically.
+
+---
+
+## 5️⃣ DispatcherServlet Creation
+
+* DispatcherServlet = Spring MVC **front controller**.
+* On startup:
+
+  1. Registered with the servlet container.
+  2. URL mappings set up (`/` or custom).
+  3. Spring context loads controllers, `@RequestMapping`, and beans.
+
+---
+
+## Diagram: Flow from Tomcat Startup → Spring MVC
+
+```
+Tomcat Startup
+      |
+      v
+ServletContainerInitializer (Servlet 3.0 Spec)
+      |
+      v
+SpringServletContainerInitializer (Spring)
+      |
+      v
+WebApplicationInitializer (User / AbstractAnnotationConfigDispatcherServletInitializer)
+      |
+      v
+Registers DispatcherServlet + Loads Spring Context
+      |
+      v
+Controllers (@Controller) and RequestMappings (@RequestMapping) ready
+      |
+      v
+HTTP Requests --> DispatcherServlet --> Controllers --> Response
+```
+
+---
+
+## ✅ TL;DR
+
+1. Tomcat provides startup hook (`ServletContainerInitializer`).
+2. Spring registers its initializer (`SpringServletContainerInitializer`).
+3. Spring finds your `WebApplicationInitializer`.
+4. DispatcherServlet is registered and Spring context is loaded.
+5. Spring MVC is ready to handle requests.
+
+
 ---
 
 # Deep Dive into Spring WebMVC
